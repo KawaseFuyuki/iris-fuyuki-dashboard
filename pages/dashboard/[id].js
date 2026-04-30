@@ -13,13 +13,14 @@ export default function GuildDashboard() {
     if (!id) return
 
     fetch(`/api/guilds/${id}/settings`)
-     .then(res => res.json())
-     .then(data => {
-        setSettings(data)
+   .then(res => res.json())
+   .then(data => {
+        setSettings(data || {})
         setLoading(false)
       })
-     .catch(err => {
+   .catch(err => {
         console.log('Failed to load:', err)
+        setSettings({})
         setLoading(false)
       })
   }, [id])
@@ -42,9 +43,11 @@ export default function GuildDashboard() {
   }
 
   const updateTicketType = (index, field, value) => {
-    const newTypes = [...(settings.ticketTypes || [])]
-    newTypes[index][field] = value
-    setSettings({...settings, ticketTypes: newTypes})
+    const newTypes = [...(settings?.ticketTypes || [])]
+    if (newTypes[index]) {
+      newTypes[index][field] = value
+      setSettings({...settings, ticketTypes: newTypes})
+    }
   }
 
   const addTicketType = () => {
@@ -59,20 +62,20 @@ export default function GuildDashboard() {
       supportRoleId: '',
       description: 'Custom ticket type'
     }
-    setSettings({...settings, ticketTypes: [...(settings.ticketTypes || []), newType]})
+    setSettings({...settings, ticketTypes: [...(settings?.ticketTypes || []), newType]})
   }
 
   const removeTicketType = (index) => {
-    const newTypes = (settings.ticketTypes || []).filter((_, i) => i!== index)
+    const newTypes = (settings?.ticketTypes || []).filter((_, i) => i!== index)
     setSettings({...settings, ticketTypes: newTypes})
   }
 
-  if (loading) {
+  if (loading ||!router.isReady) {
     return (
       <div style={{ background: '#1a1a1a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'system-ui' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
-          <div style={{ fontSize: '20px' }}>Loading...</div>
+          <div style={{ fontSize: '20px' }}>Loading Dashboard...</div>
         </div>
       </div>
     )
@@ -83,8 +86,8 @@ export default function GuildDashboard() {
       <div style={{ background: '#1a1a1a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'system-ui' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '20px' }}>😿</div>
-          <div style={{ fontSize: '20px', marginBottom: '20px' }}>Failed to load</div>
-          <button onClick={() => router.push('/')} style={{ background: '#ff69b4', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer' }}>← Back</button>
+          <div style={{ fontSize: '20px', marginBottom: '20px' }}>Failed to load settings</div>
+          <button onClick={() => router.push('/')} style={{ background: '#ff69b4', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>← Back to Servers</button>
         </div>
       </div>
     )
@@ -99,11 +102,10 @@ export default function GuildDashboard() {
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <button onClick={() => router.push('/')} style={{ background: '#333', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', marginBottom: '20px' }}>← Back</button>
 
-        <h1 style={{ color: '#ff69b4', marginBottom: '30px' }}>Server Settings - {id}</h1>
+        <h1 style={{ color: '#ff69b4', marginBottom: '30px' }}>Server Settings</h1>
 
         <div style={{ background: '#2a2a2a', padding: '25px', borderRadius: '12px', border: '1px solid #ff69b4' }}>
 
-          {/* WELCOME */}
           <h2 style={{ color: '#ff69b4', marginBottom: '20px' }}>👋 Welcome Settings</h2>
 
           <label style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
@@ -114,7 +116,7 @@ export default function GuildDashboard() {
           <label style={labelStyle}>Embed Title</label>
           <input type="text" value={settings.welcomeEmbedTitle || ''} onChange={(e) => setSettings({...settings, welcomeEmbedTitle: e.target.value})} style={inputStyle} />
 
-          <label style={labelStyle}>Embed Description</label>
+          <label style={labelStyle}>Embed Description - Use {'{user}'} and {'{server}'}</label>
           <textarea value={settings.welcomeMessage || ''} onChange={(e) => setSettings({...settings, welcomeMessage: e.target.value})} style={{...inputStyle, minHeight: '100px', resize: 'vertical' }} />
 
           <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
@@ -122,14 +124,14 @@ export default function GuildDashboard() {
               <label style={labelStyle}>Embed Color</label>
               <input type="color" value={settings.welcomeEmbedColor || '#ff69b4'} onChange={(e) => setSettings({...settings, welcomeEmbedColor: e.target.value})} style={{ width: '100px', height: '50px', background: '#1a1a1a', border: '1px solid #444', borderRadius: '8px', cursor: 'pointer' }} />
             </div>
-            <div style={{ flex: 1, minWidth: '200px' }}>
+            <div style={{ flex: 1, minWidth: '250px' }}>
               <label style={labelStyle}>Welcome Emoji</label>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <select value={settings.welcomeEmojiType || 'unicode'} onChange={(e) => setSettings({...settings, welcomeEmojiType: e.target.value})} style={{ padding: '12px', background: '#1a1a1a', border: '1px solid #444', borderRadius: '8px', color: 'white' }}>
                   <option value="unicode">Unicode 😎</option>
                   <option value="custom">Custom <:name:id></option>
                 </select>
-                {settings.welcomeEmojiType === 'unicode'? (
+                {(settings.welcomeEmojiType || 'unicode') === 'unicode'? (
                   <input type="text" value={settings.welcomeEmoji || ''} onChange={(e) => setSettings({...settings, welcomeEmoji: e.target.value})} style={{ width: '80px', padding: '12px', background: '#1a1a1a', border: '1px solid #444', borderRadius: '8px', color: 'white', fontSize: '20px', textAlign: 'center' }} maxLength="2" />
                 ) : (
                   <input type="text" value={settings.welcomeEmojiCustom || ''} onChange={(e) => setSettings({...settings, welcomeEmojiCustom: e.target.value})} style={{ flex: 1, padding: '12px', background: '#1a1a1a', border: '1px solid #444', borderRadius: '8px', color: 'white' }} placeholder="<:uki_wave:123456789>" />
@@ -150,7 +152,6 @@ export default function GuildDashboard() {
           <label style={labelStyle}>Command Prefix</label>
           <input type="text" value={settings.prefix || '+'} onChange={(e) => setSettings({...settings, prefix: e.target.value})} style={inputStyle} placeholder="+" />
 
-          {/* TICKET SYSTEM */}
           <div style={sectionStyle}>
             <h2 style={{ color: '#ff69b4', marginBottom: '20px' }}>🎫 Ticket System</h2>
 
@@ -168,7 +169,7 @@ export default function GuildDashboard() {
 
               <label style={labelStyle}>Ticket Types</label>
               {(settings.ticketTypes || []).map((type, i) => (
-                <div key={type.id} style={{ background: '#1a1a1a', padding: '15px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #444' }}>
+                <div key={type.id || i} style={{ background: '#1a1a1a', padding: '15px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #444' }}>
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
                     <span style={{ color: '#ff69b4', fontWeight: '600' }}>#{i + 1}</span>
                     <button onClick={() => removeTicketType(i)} style={{ marginLeft: 'auto', background: '#f44336', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Remove</button>
@@ -188,7 +189,7 @@ export default function GuildDashboard() {
                     </select>
                   </div>
 
-                  {type.emojiType === 'unicode'? (
+                  {(type.emojiType || 'unicode') === 'unicode'? (
                     <input type="text" value={type.emoji || ''} onChange={(e) => updateTicketType(i, 'emoji', e.target.value)} style={{...inputStyle, marginBottom: '10px', padding: '10px', width: '80px', fontSize: '20px', textAlign: 'center' }} placeholder="🎫" maxLength="2" />
                   ) : (
                     <input type="text" value={type.emojiCustom || ''} onChange={(e) => updateTicketType(i, 'emojiCustom', e.target.value)} style={{...inputStyle, marginBottom: '10px', padding: '10px' }} placeholder="<:name:123456789>" />
@@ -214,4 +215,4 @@ export default function GuildDashboard() {
       </div>
     </div>
   )
-            }
+    }
