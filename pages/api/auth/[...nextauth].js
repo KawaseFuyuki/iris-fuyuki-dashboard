@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import DiscordProvider from "next-auth/providers/discord"
 
-export const authOptions = {
+export default NextAuth({
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID,
@@ -9,7 +9,6 @@ export const authOptions = {
       authorization: { params: { scope: 'identify email guilds' } }
     })
   ],
-  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
@@ -19,10 +18,7 @@ export const authOptions = {
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken
-      session.user.id = token.sub
       return session
-    }
+    },
   }
-}
-
-export default NextAuth(authOptions)
+})
